@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!--
+  index.html — Coquille de l'application de dimensionnement biomasse.
+  Responsabilité : structure sémantique (en-tête, panneaux de saisie bâtiment
+  et hypothèses économiques, zone résultats, zone graphiques), chargement des
+  modules ES. Aucune logique de calcul ni de manipulation DOM complexe ici :
+  tout est délégué à js/ui.js et js/app.js.
+-->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dimensionnement chauffage biomasse</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Dimensionnement &amp; comparaison — chauffage biomasse</h1>
+    <p class="subtitle">Granulés · Bûches · Bûches + ballon tampon</p>
+  </header>
+
+  <main class="layout">
+    <form id="formulaire" novalidate>
+      <!-- Panneau de saisie : bâtiment -->
+      <section class="panel" id="saisie-batiment" aria-labelledby="titre-batiment">
+        <h2 id="titre-batiment">Bâtiment</h2>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="surfaceM2">Surface habitable (m²)</label>
+            <input type="number" id="surfaceM2" name="surfaceM2" value="120" min="20" max="2000" step="5">
+            <p class="error" id="err-surfaceM2"></p>
+          </div>
+          <div class="field">
+            <label for="hauteurM">Hauteur sous plafond (m)</label>
+            <input type="number" id="hauteurM" name="hauteurM" value="2.5" min="1.5" max="6" step="0.1">
+            <p class="error" id="err-hauteurM"></p>
+          </div>
+          <div class="field">
+            <label for="longueurM">Longueur (m)</label>
+            <input type="number" id="longueurM" name="longueurM" value="12" min="2" max="100" step="0.5">
+            <p class="error" id="err-longueurM"></p>
+          </div>
+          <div class="field">
+            <label for="largeurM">Largeur (m)</label>
+            <input type="number" id="largeurM" name="largeurM" value="10" min="2" max="100" step="0.5">
+            <p class="error" id="err-largeurM"></p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="uMurs">Coefficient U murs (W/m²·K)</label>
+            <input type="number" id="uMurs" name="uMurs" value="0.35" min="0.05" max="3" step="0.05">
+            <p class="error" id="err-uMurs"></p>
+          </div>
+          <div class="field">
+            <label for="uToit">Coefficient U toiture (W/m²·K)</label>
+            <input type="number" id="uToit" name="uToit" value="0.25" min="0.05" max="3" step="0.05">
+            <p class="error" id="err-uToit"></p>
+          </div>
+          <div class="field">
+            <label for="uVitrage">Coefficient U vitrage (W/m²·K)</label>
+            <input type="number" id="uVitrage" name="uVitrage" value="1.3" min="0.3" max="6" step="0.1">
+            <p class="error" id="err-uVitrage"></p>
+          </div>
+          <div class="field">
+            <label for="uPlancher">Coefficient U plancher (W/m²·K)</label>
+            <input type="number" id="uPlancher" name="uPlancher" value="0.3" min="0.05" max="3" step="0.05">
+            <p class="error" id="err-uPlancher"></p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="sVitrage">Surface vitrée (m²)</label>
+            <input type="number" id="sVitrage" name="sVitrage" value="25" min="0" max="500" step="1">
+            <p class="error" id="err-sVitrage"></p>
+          </div>
+          <div class="field">
+            <label for="tauxRenouvellement">Renouvellement d'air (vol/h)</label>
+            <input type="number" id="tauxRenouvellement" name="tauxRenouvellement" value="0.5" min="0.1" max="3" step="0.05">
+            <p class="error" id="err-tauxRenouvellement"></p>
+          </div>
+          <div class="field">
+            <label for="zoneClimatique">Zone climatique</label>
+            <select id="zoneClimatique" name="zoneClimatique">
+              <option value="littoralNord">Littoral nord</option>
+              <option value="interieur" selected>Intérieur</option>
+              <option value="montagne">Montagne</option>
+              <option value="sudAride">Sud aride</option>
+            </select>
+            <p class="error" id="err-zoneClimatique"></p>
+          </div>
+          <div class="field">
+            <label for="tInterieurC">Température intérieure cible (°C)</label>
+            <input type="number" id="tInterieurC" name="tInterieurC" value="20" min="15" max="25" step="0.5">
+            <p class="error" id="err-tInterieurC"></p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="humiditeBois">Humidité du bois (%)</label>
+            <input type="number" id="humiditeBois" name="humiditeBois" value="20" min="5" max="60" step="1">
+            <p class="error" id="err-humiditeBois"></p>
+          </div>
+          <p class="hint" id="hint-humidite"></p>
+        </div>
+      </section>
+
+      <!-- Panneau hypothèses économiques -->
+      <section class="panel" id="hypotheses" aria-labelledby="titre-hypotheses">
+        <h2 id="titre-hypotheses">Hypothèses économiques</h2>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="prixGranules">Prix granulés (€/kg)</label>
+            <input type="number" id="prixGranules" name="prixGranules" value="0.38" min="0.05" max="1" step="0.01">
+            <p class="error" id="err-prixGranules"></p>
+          </div>
+          <div class="field">
+            <label for="prixBuches">Prix bûches (€/stère)</label>
+            <input type="number" id="prixBuches" name="prixBuches" value="130" min="10" max="400" step="5">
+            <p class="error" id="err-prixBuches"></p>
+          </div>
+          <div class="field">
+            <label for="coutEntretien">Coût d'entretien annuel (€/an)</label>
+            <input type="number" id="coutEntretien" name="coutEntretien" value="150" min="0" max="2000" step="10">
+            <p class="error" id="err-coutEntretien"></p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="dureeVie">Durée de vie installation (années)</label>
+            <input type="number" id="dureeVie" name="dureeVie" value="15" min="5" max="40" step="1">
+            <p class="error" id="err-dureeVie"></p>
+          </div>
+          <div class="field">
+            <label for="tauxActualisation">Taux d'actualisation (%)</label>
+            <input type="number" id="tauxActualisation" name="tauxActualisation" value="3" min="0" max="15" step="0.5">
+            <p class="error" id="err-tauxActualisation"></p>
+          </div>
+          <div class="field">
+            <label for="inflationEnergie">Inflation énergie (%)</label>
+            <input type="number" id="inflationEnergie" name="inflationEnergie" value="2" min="0" max="10" step="0.5">
+            <p class="error" id="err-inflationEnergie"></p>
+          </div>
+          <div class="field">
+            <label for="autonomieJours">Autonomie stockage (jours)</label>
+            <input type="number" id="autonomieJours" name="autonomieJours" value="30" min="1" max="365" step="1">
+            <p class="error" id="err-autonomieJours"></p>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-calculer">Calculer</button>
+      </section>
+    </form>
+
+    <!-- Zone résultats -->
+    <section class="panel results" id="panneau-resultats" aria-labelledby="titre-resultats">
+      <h2 id="titre-resultats">Résultats</h2>
+      <div id="cartes-scenarios" class="cards"></div>
+      <div id="tableau-comparatif"></div>
+      <div id="zone-graphiques"></div>
+      <div id="recommandations"></div>
+      <button id="btn-imprimer" type="button">Imprimer le rapport</button>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
